@@ -1,11 +1,13 @@
 # Fly.io custom Dockerfile for pinjam-in
 FROM php:8.4-fpm-alpine
 
-# Install dependencies
+# Install dependencies (PHP + Node.js)
 RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
+    nodejs \
+    npm \
     libpng \
     libzip \
     oniguruma \
