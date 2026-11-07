@@ -1,8 +1,10 @@
 #!/bin/sh
 set -e
 
-# Run database migrations FIRST (config:cache/route:cache below need
-# the DB ready because CACHE_STORE defaults to 'database')
+# Wait for DB DNS/internal network to be ready
+sleep 5
+
+# Run database migrations FIRST
 php /var/www/html/artisan migrate --force
 
 # Set permissions
