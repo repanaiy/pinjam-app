@@ -1,0 +1,133 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: opcache, mbstring, xml, zip, pdo_mysql
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress --no-dev
+          npm ci --only=production
+
+      - name: Build assets
+        run: |
+          npm run build
+
+      - name: Prepare deployment package
+        run: |
+          mkdir -p deploy
+          rsync -av \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='storage' \
+            --exclude='.env' \
+            --exclude='.github' \
+            --exclude='deploy' \
+            . deploy/
+
+          cp .env.example deploy/.env
+
+      - name: Upload package (via SCP)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          source: deploy/*
+          target: /tmp/pinjam-alat-deploy
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Run remote deployment script
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            # Lock deployment (concurrent safe)
+            if [[ -f /tmp/pinjam-alat.deploy.lock ]]; then
+              echo "Another deployment is in progress. Exiting."
+              exit 1
+            fi
+            trap 'rm -f /tmp/pinjam-alat.deploy.lock' EXIT
+            touch /tmp/pinjam-alat.deploy.lock
+
+            # Variables
+            APP_PATH="/var/www/pinjam-alat-app"
+            BACKUP_PATH="/var/backups/pinjam-alat"
+
+            # Backup existing app
+            mkdir -p "$BACKUP_PATH"
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            tar -czf "$BACKUP_PATH/app.$TIMESTAMP.tar.gz" -C "$APP_PATH" . 2>/dev/null || true
+
+            # Deploy new files
+            rsync -av --delete \
+              --exclude='storage' \
+              --exclude='.env' \
+              /tmp/pinjam-alat-deploy/ "$APP_PATH/"
+
+            # Restore env
+            if [[ -f "$APP_PATH/.env" ]]; then
+              mv "$APP_PATH/.env" "$APP_PATH/.env.backup-$TIMESTAMP"
+            fi
+            cp /tmp/pinjam-alat-deploy/.env.example "$APP_PATH/.env"
+
+            # Set permissions
+            chown -R www-data:www-data "$APP_PATH"
+            chmod -R 755 "$APP_PATH/storage"
+            chmod -R 755 "$APP_PATH/bootstrap/cache"
+
+            # Install composer (production)
+            cd "$APP_PATH"
+            composer install --prefer-dist --no-interaction --no-progress --no-dev --optimize-autoloader
+
+            # Migrate database
+            php artisan migrate --force
+
+            # Clear caches
+            php artisan config:clear
+            php artisan view:clear
+            php artisan cache:clear
+
+            # Link storage
+            php artisan storage:link
+
+            # Restart queue worker (supervisor)
+            supervisorctl restart pinjam-alat-worker:*
+
+            # Reload PHP-FPM
+            systemctl reload php8.2-fpm
+
+            # Cleanup temp files
+            rm -rf /tmp/pinjam-alat-deploy
+
+            echo "Deployment completed at $(date)" | tee -a "$BACKUP_PATH/deploy.log"
+
+      - name: Notify success
+        if: success()
+        run: |
+          echo "✅ Deployment completed"
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}

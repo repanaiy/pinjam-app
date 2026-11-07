@@ -1,0 +1,86 @@
+name: CI / Deployment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  APP_ENV: production
+  APP_DEBUG: false
+  APP_TIMEZONE: Asia/Jakarta
+  LOG_CHANNEL: stack
+  LOG_LEVEL: error
+
+  DB_CONNECTION: sqlite
+  DB_DATABASE: /tmp/tests.sqlite
+
+  QUEUE_CONNECTION: sync
+  CACHE_STORE: array
+  SESSION_DRIVER: array
+
+  MAIL_MAILER: log
+
+  UPLOAD_MAX_FILESIZE: 20M
+  POST_MAX_SIZE: 64M
+
+  PHP_EXTENSIONS: opcache, mbstring, xml, zip
+
+jobs:
+  test:
+    name: Test (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php:
+          - '8.2'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          tools: composer:v2
+
+      - name: Get composer cache
+        id: composer-cache
+        run: |
+          mkdir -p ${{ runner.temp }}/composer-cache
+          echo "dir=${{ runner.temp }}/composer-cache" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: php-${{ matrix.php }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            php-${{ matrix.php }}-composer-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --no-dev
+
+      - name: Generate key & config
+        run: |
+          php artisan key:generate
+          cp .env.example .env
+          php artisan config:cache
+
+      - name: Prepare test database
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --force
+
+      - name: Run PHPUnit tests
+        run: |
+          php artisan test --no-coverage --parallel
+
+      - name: Compile Blade views
+        run: php artisan view:clear && php artisan view:cache

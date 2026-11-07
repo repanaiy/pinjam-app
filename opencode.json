@@ -1,0 +1,51 @@
+{
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "env": {
+    "PHP_CLI_SERVER_WORKERS": "4",
+    "APP_ENV": "local",
+    "APP_DEBUG": "true",
+    "DB_CONNECTION": "mysql",
+    "DB_DATABASE": "pinjam_alat",
+    "DB_USERNAME": "root",
+    "DB_PASSWORD": "",
+    "SESSION_DRIVER": "database",
+    "QUEUE_CONNECTION": "database",
+    "BROADCAST_CONNECTION": "reverb",
+    "CACHE_STORE": "file",
+    "MAIL_MAILER": "log",
+    "VITE_APP_NAME": "PINJAM-IN",
+    "VITE_REVERB_APP_KEY": "pinjaminkey",
+    "VITE_REVERB_HOST": "localhost",
+    "VITE_REVERB_PORT": "8080",
+    "VITE_REVERB_SCHEME": "http"
+  },
+  "tools": {
+    "opencode": {
+      "search": {
+        "args": {
+          "type": "chat"
+        }
+      }
+    }
+  },
+  "tasks": {
+    "dev": {
+      "cmd": "bash setup.sh pinjam-alat-app && cd pinjam-alat-app && npm install && php artisan migrate --seed && npm run dev & php artisan serve",
+      "cwd": "C:/Users/User/Documents/pinjam-in"
+    },
+    "test": {
+      "cmd": "cd pinjam-alat-app && ./vendor/bin/phpunit && npm run test:js",
+      "cwd": "C:/Users/User/Documents/pinjam-in"
+    },
+    "flutter-dev": {
+      "cmd": "flutter pub get && flutter run --dart-define API_BASE_URL=http://10.0.2.2:8000/api",
+      "cwd": "C:/Users/User/Documents/pinjam-in/mobile"
+    },
+    "flutter-test": {
+      "cmd": "flutter test",
+      "cwd": "C:/Users/User/Documents/pinjam-in/mobile"
+    }
+  }
+}
