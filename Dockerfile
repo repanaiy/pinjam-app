@@ -1,6 +1,6 @@
 # Laravel + Railway Docker Deployment
 
-FROM php:8.3-fpm-alpine AS builder
+FROM php:8.4-fpm-alpine AS builder
 
 # Install build dependencies (PHP + Node.js)
 RUN apk add --no-cache \
@@ -50,7 +50,7 @@ RUN npm run build:prod \
 RUN ls -la public/build/ && test -f public/build/manifest.json
 
 # Production stage
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Install runtime dependencies + build deps (headers), compile extensions, then drop build deps
 RUN apk add --no-cache \
