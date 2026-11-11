@@ -50,7 +50,7 @@ class InventarisController extends Controller
     {
         return view('admin.inventaris.form', [
             'item' => new Item([
-                'max_loan_days' => (int) Setting::get('max_loan_days', 7),
+                'max_loan_days' => (int) Setting::get('max_loan_days', 5),
                 'max_qty_per_loan' => 1,
                 'min_stock' => 1,
                 'status' => 'active',

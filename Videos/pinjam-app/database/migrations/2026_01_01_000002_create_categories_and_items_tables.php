@@ -28,7 +28,7 @@ return new class extends Migration
             $t->text('package_contents')->nullable();
             $t->json('checklist_template')->nullable();
             $t->string('location', 150)->nullable();
-            $t->unsignedTinyInteger('max_loan_days')->default(7);
+            $t->unsignedTinyInteger('max_loan_days')->default(5);
             $t->unsignedTinyInteger('max_qty_per_loan')->default(1);
             $t->unsignedSmallInteger('min_stock')->default(1);
             $t->enum('status', ['active', 'inactive'])->default('active');

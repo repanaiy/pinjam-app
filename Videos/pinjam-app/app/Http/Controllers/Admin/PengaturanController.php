@@ -25,7 +25,7 @@ class PengaturanController extends Controller
             'values' => [
                 'service_hour_start' => Setting::get('service_hour_start', '07:00'),
                 'service_hour_end' => Setting::get('service_hour_end', '15:00'),
-                'max_loan_days' => Setting::get('max_loan_days', 7),
+                'max_loan_days' => Setting::get('max_loan_days', 5),
                 'review_sla_workdays' => Setting::get('review_sla_workdays', 1),
                 'pickup_grace_workdays' => Setting::get('pickup_grace_workdays', 1),
                 'late_warning_threshold' => Setting::get('late_warning_threshold', 3),

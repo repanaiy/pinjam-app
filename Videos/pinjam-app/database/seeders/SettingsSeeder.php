@@ -13,7 +13,7 @@ class SettingsSeeder extends Seeder
             ['service_days', '1,2,3,4,5', 'Hari layanan (1=Senin ... 7=Minggu)'],
             ['service_hour_start', '07:00', 'Jam buka layanan'],
             ['service_hour_end', '15:00', 'Jam tutup layanan'],
-            ['max_loan_days', '7', 'Maksimal hari peminjaman default'],
+            ['max_loan_days', '5', 'Maksimal hari peminjaman default'],
             ['review_sla_workdays', '1', 'Batas hari kerja peninjauan admin'],
             ['pickup_grace_workdays', '1', 'Toleransi hari kerja pengambilan sebelum expired'],
             ['late_warning_threshold', '3', 'Jumlah keterlambatan sebelum siswa diberi peringatan'],

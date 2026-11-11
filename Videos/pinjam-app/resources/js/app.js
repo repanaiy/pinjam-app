@@ -25,27 +25,30 @@ Alpine.data('qtyStepper', (cfg = {}) => ({
 Alpine.data('dropzone', (cfg = {}) => ({
     maxMb: cfg.maxMb || 5,
     accept: cfg.accept || [],
-    file: null,
-    error: '',
-    over: false,
+    previewUrl: null,
     pick(files) {
         const f = files && files[0];
         this.error = '';
         if (!f) return;
         if (this.accept.length && !this.accept.includes(f.type)) {
-            this.error = 'Format berkas tidak didukung.'; this.file = null; this.$refs.input.value = ''; return;
+            this.error = 'Format berkas tidak didukung.'; this.file = null; this.$refs.input.value = ''; this.previewUrl = null; return;
         }
         if (f.size > this.maxMb * 1024 * 1024) {
-            this.error = `Ukuran berkas maksimal ${this.maxMb} MB.`; this.file = null; this.$refs.input.value = ''; return;
+            this.error = `Ukuran berkas maksimal ${this.maxMb} MB.`; this.file = null; this.$refs.input.value = ''; this.previewUrl = null; return;
         }
         this.file = f;
+        if (f.type.startsWith('image/')) {
+            this.previewUrl = URL.createObjectURL(f);
+        } else {
+            this.previewUrl = null;
+        }
     },
     drop(e) {
         this.over = false;
         const dt = e.dataTransfer;
         if (dt && dt.files.length) { this.$refs.input.files = dt.files; this.pick(dt.files); }
     },
-    clear() { this.file = null; this.error = ''; this.$refs.input.value = ''; },
+    clear() { this.file = null; this.error = ''; this.$refs.input.value = ''; this.previewUrl = null; },
     size() { return this.file ? `${(this.file.size / 1024 / 1024).toFixed(2)} MB` : ''; },
 }));
 
